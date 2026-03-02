@@ -27,8 +27,10 @@ if sys.platform == 'win32':
     args.extend([
         '--icon=logo.ico',
         f'--add-data=logo.ico{sep}.',
-        f'--add-data=dist/ffmpeg.exe{sep}.',
-        f'--add-data=dist/ffprobe.exe{sep}.',
     ])
+    if os.path.exists('dist/ffmpeg.exe'):
+        args.append(f'--add-data=dist/ffmpeg.exe{sep}.')
+    if os.path.exists('dist/ffprobe.exe'):
+        args.append(f'--add-data=dist/ffprobe.exe{sep}.')
 
 PyInstaller.__main__.run(args)
