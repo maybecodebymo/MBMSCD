@@ -10,6 +10,12 @@ import random
 ctk.set_appearance_mode("Light") 
 ctk.set_default_color_theme("dark-blue") 
 
+# Linux often fails to detect High-DPI displays correctly and defaults to 1.0 (making it tiny).
+# We can force a higher scaling factor here. (Try 1.5, 1.75, or 2.0 if still too small)
+if sys.platform.startswith("linux"):
+    ctk.set_widget_scaling(1.5)
+    ctk.set_window_scaling(1.5)
+
 class ProgressButton(ctk.CTkFrame):
     def __init__(self, master, width=200, height=50, 
                  text="BUTTON", font=None,
@@ -140,15 +146,18 @@ class App(ctk.CTk):
         self.add_chaos_stickers()
 
     def check_ffmpeg(self):
-        # 1. Check for bundled ffmpeg
-        bundled_ffmpeg = self.resource_path("ffmpeg.exe")
-        if os.path.exists(bundled_ffmpeg):
-            return os.path.dirname(bundled_ffmpeg)
-            
-        # 2. Check system PATH
+        import sys
         import shutil
+        
+        # 1. Check system PATH first (preferred, especially on Linux/macOS)
         if shutil.which("ffmpeg"):
             return None # detected in path, yt-dlp will find it
+
+        # 2. Check for bundled ffmpeg
+        exe_ext = ".exe" if sys.platform == "win32" else ""
+        bundled_ffmpeg = self.resource_path(f"ffmpeg{exe_ext}")
+        if os.path.exists(bundled_ffmpeg):
+            return os.path.dirname(bundled_ffmpeg)
 
         # 3. Not found
         self.label_warning = ctk.CTkLabel(
@@ -191,9 +200,17 @@ class App(ctk.CTk):
             self.label_logo = ctk.CTkLabel(self.frame_header, text="", image=logo_img)
             self.label_logo.pack(pady=15)
             
-            icon_path = self.resource_path("logo.ico")
-            if os.path.exists(icon_path):
-                 self.iconbitmap(icon_path)
+            import sys
+            if sys.platform.startswith("win"):
+                icon_path = self.resource_path("logo.ico")
+                if os.path.exists(icon_path):
+                     self.iconbitmap(icon_path)
+            else:
+                from PIL import ImageTk
+                icon_path = self.resource_path("logo.png")
+                if os.path.exists(icon_path):
+                    icon_image = ImageTk.PhotoImage(Image.open(icon_path))
+                    self.iconphoto(True, icon_image)
         except Exception as e:
             print(f"Error loading logo: {e}")
             self.label_title = ctk.CTkLabel(
@@ -403,10 +420,17 @@ class App(ctk.CTk):
         self.btn_download.command = self.start_download_thread
 
     def open_folder(self, path):
+        import subprocess
+        import sys
         try:
-            os.startfile(path)
-        except Exception:
-            pass
+            if sys.platform == 'win32':
+                os.startfile(path)
+            elif sys.platform == 'darwin':
+                subprocess.Popen(['open', path])
+            else:
+                subprocess.Popen(['xdg-open', path])
+        except Exception as e:
+            print(f"Error opening folder: {e}")
         self.reset_button()
 
 if __name__ == "__main__":

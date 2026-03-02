@@ -1,26 +1,34 @@
 import PyInstaller.__main__
 import customtkinter
 import os
+import sys
 
 # Get customtkinter path
 ctk_path = os.path.dirname(customtkinter.__file__)
 
-PyInstaller.__main__.run([
+# Use appropriate path separator for --add-data based on OS
+sep = ';' if sys.platform == 'win32' else ':'
+
+args = [
     'main.py',
     '--name=SoundCloudDownloader',
     '--onefile',
     '--noconsole',
-    f'--add-data={ctk_path};customtkinter/',
+    f'--add-data={ctk_path}{sep}customtkinter/',
     '--clean',
     '--noconfirm',
-    '--icon=logo.ico',
-    '--add-data=logo.png;.',
-    '--add-data=logo.ico;.',
-    '--add-data=logo2.png;.',
+    f'--add-data=logo.png{sep}.',
+    f'--add-data=logo2.png{sep}.',
+    f'--add-data=fl.png{sep}.',
+    f'--add-data=sc(1).png{sep}.',
+]
 
-    '--add-data=fl.png;.',
-    '--add-data=sc(1).png;.',
-    # Add FFmpeg binaries (assuming they are in dist/ folder)
-    '--add-data=dist/ffmpeg.exe;.',
-    '--add-data=dist/ffprobe.exe;.',
-])
+if sys.platform == 'win32':
+    args.extend([
+        '--icon=logo.ico',
+        f'--add-data=logo.ico{sep}.',
+        f'--add-data=dist/ffmpeg.exe{sep}.',
+        f'--add-data=dist/ffprobe.exe{sep}.',
+    ])
+
+PyInstaller.__main__.run(args)
